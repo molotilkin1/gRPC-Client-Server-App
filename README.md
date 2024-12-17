@@ -1,2 +1,3 @@
 # gRPC-Client-Server-App
-gRPC Client Server App
+Проект содерижит пару приложений клиент и сервер, общающихся с использованием gRPC.
+
