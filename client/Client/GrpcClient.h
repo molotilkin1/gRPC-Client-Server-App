@@ -15,7 +15,7 @@ public:
     ~GrpcClient();
     void connectToServer();
     void disconnectFromServer();
-
+    QString convertIPv6ToIPv4(const QString &address);
     bool isConnected() const;
 
 signals:

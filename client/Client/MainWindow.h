@@ -33,5 +33,6 @@ private:
 
     UdpDiscoveryService udpService;
     ServerTableModel serverTableModel;
+    GrpcClient* client;
 };
 #endif // MAINWINDOW_H

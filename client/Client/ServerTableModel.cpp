@@ -36,7 +36,7 @@ QVariant ServerTableModel::data(const QModelIndex& index, int role) const {
         case 0: return server.address; break;
         case 1: return server.lastPingTime.isEmpty() ? "-" : server.lastPingTime;break;
         case 2: return server.status;break;
-        case 3: return server.status == "Online" ? "Disconnect" : "Connect";break;//"Online" ? "Disconnect" : "Connect"
+        case 3: return server.status == "Online" ? "Disconnect" : "Connect";break;
         }
     }
 
@@ -110,27 +110,6 @@ void ServerTableModel::updateStatus(int row, const QString& status) {
     }
 }
 
-/*void ServerTableModel::updatePingTime(const QString& address, const QString& time) {
-    for (int i = 0; i < servers.size(); ++i) {
-        if (servers[i].address == address) {
-            servers[i].lastPingTime = time;
-            QModelIndex index = createIndex(i, 1);
-            emit dataChanged(index, index);
-            break;
-        }
-    }
-}
-
-void ServerTableModel::updateStatus(const QString& address, const QString& status) {
-    for (int i = 0; i < servers.size(); ++i) {
-        if (servers[i].address == address) {
-            servers[i].status = status;
-            QModelIndex index = createIndex(i, 2);
-            emit dataChanged(index, index);
-            break;
-        }
-    }
-}*/
 
 int ServerTableModel::findRowByAddress(const QString& address) const {
     for (int i = 0; i < servers.size(); ++i) {

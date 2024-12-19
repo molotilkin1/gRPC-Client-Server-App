@@ -109,15 +109,16 @@ void ServerWindow::stopServer()
 
 void ServerWindow::handleBroadcast()
 {
-    if (isClientConnected) return;
+    /*if (isClientConnected) return;*/
+    if(!isClientConnected) {
+        QByteArray message = QString("IP:%1 PORT:%2")
+                                 .arg(QHostAddress(QHostAddress::LocalHost).toString())
+                                 .arg(portLineEdit->text())
+                                 .toUtf8();
 
-    QByteArray message = QString("IP:%1 PORT:%2")
-                             .arg(QHostAddress(QHostAddress::LocalHost).toString())
-                             .arg(portLineEdit->text())
-                             .toUtf8();
-
-    udpSocket->writeDatagram(message, QHostAddress::Broadcast, 10001);
-    logEvent("Отправлено широковещательное сообщение: " + QString(message));
+        udpSocket->writeDatagram(message, QHostAddress::Broadcast, 10001);
+        logEvent("Отправлено широковещательное сообщение: " + QString(message));
+    }
 }
 
 void ServerWindow::stopBroadcast()

@@ -46,21 +46,17 @@ void MainWindow::onServerDiscovered(const QString& address) {
     serverTableModel.addServer(address);
 }
 
-void MainWindow::onActionButtonClicked(int row) {
-    /*auto index = serverTableModel.index(row, 0); // Адрес сервера
-    QString serverAddress = serverTableModel.data(index).toString();
-
-    auto statusIndex = serverTableModel.index(row, 2); // Статус сервера
-    QString status = serverTableModel.data(statusIndex).toString();*/
+void MainWindow::onActionButtonClicked(int row) {    
 
     QString status = serverTableModel.data(serverTableModel.index(row, 2), Qt::DisplayRole).toString();
     QString serverAddress = serverTableModel.data(serverTableModel.index(row, 0), Qt::DisplayRole).toString();
+    qDebug() << "serverAddress is: "<<serverAddress;
 
-    GrpcClient* client = new GrpcClient(serverAddress, this);
+
 
     if (status == "Offline") {
         // Подключаемся к серверу
-
+        client = new GrpcClient("127.0.0.1:10001", this);
         client->connectToServer();
         // Успешный пинг
         connect(client, &GrpcClient::pingSucceeded, [this, row]() {
@@ -84,7 +80,7 @@ void MainWindow::onActionButtonClicked(int row) {
         });
 
         // Пинг неудачен
-        connect(client, &GrpcClient::pingFailed, [this, row, client]() {
+        connect(client, &GrpcClient::pingFailed, [this, row/*, client*/]() {
             auto statusIndex = serverTableModel.index(row, 2);
             serverTableModel.setData(statusIndex, "Offline");
 
@@ -98,21 +94,21 @@ void MainWindow::onActionButtonClicked(int row) {
         });
 
 
-
-        //serverTableModel.setData(statusIndex, "Online");
     } else if (status == "Online") {
-        // Отключаемся от сервера
-        /*auto statusIndex = serverTableModel.index(row, 2);
-        serverTableModel.setData(statusIndex, "Offline");*/
+        // Отключаемся от сервера        
+        client->disconnectFromServer();
+        client->deleteLater();
+        auto statusIndex = serverTableModel.index(row, 2);
+        serverTableModel.setData(statusIndex, "Offline");
 
         // Отключаемся от сервера
-        client->disconnectFromServer();
+
         serverTableModel.updateStatus(row, "Offline");
 
-        auto actionIndex = serverTableModel.index(row, 3);
-        serverTableModel.setData(actionIndex, "Connect");
-
-        client->deleteLater();
+        /*auto actionIndex = serverTableModel.index(row, 3);
+        serverTableModel.setData(actionIndex, "Connect");*/
     }
+
+
     emit serverTableModel.dataChanged(serverTableModel.index(row, 3), serverTableModel.index(row, 3));
 }
