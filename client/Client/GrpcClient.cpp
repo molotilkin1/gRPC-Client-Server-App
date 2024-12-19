@@ -30,8 +30,29 @@ void GrpcClient::connectToServer() {
 }
 
 void GrpcClient::disconnectFromServer() {
+
+    if (isConnected()) {
+        grpc::ClientContext context;
+        PingRequest request;
+        PingResponse response;
+
+        request.set_clientip("DISCONNECT"); // Уникальное значение для уведомления об отключении
+
+        qDebug() << "Notifying server about disconnection:" << serverAddress;
+
+        auto status = stub->Ping(&context, request, &response);
+
+        if (!status.ok()) {
+            qDebug() << "Failed to notify server about disconnection. Error:"
+                     << QString::fromStdString(status.error_message());
+        } else {
+            qDebug() << "Server acknowledged disconnection.";
+        }
+    }
+
     pingTimer.stop();
     qDebug() << "Disconnected from server:" << serverAddress;
+
 }
 
 bool GrpcClient::isConnected() const {
@@ -45,9 +66,6 @@ void GrpcClient::sendPing() {
 
     request.set_clientip("192.168.0.1"); // Replace with the client's IP address
 
-    // Устанавливаем тайм-аут
-    /*std::chrono::system_clock::time_point deadline = std::chrono::system_clock::now() + std::chrono::seconds(2);
-    context.set_deadline(deadline);*/
 
     qDebug() << "Sending Ping to server with IP:" << serverAddress;
 

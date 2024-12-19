@@ -3,6 +3,8 @@
 #include <QVBoxLayout>
 #include <QDateTime>
 #include <QHostAddress>
+#include <QMetaType>
+
 
 ServerWindow::ServerWindow(QWidget *parent)
     : QMainWindow(parent),
@@ -16,7 +18,9 @@ ServerWindow::ServerWindow(QWidget *parent)
     connect(startButton, &QPushButton::clicked, this, &ServerWindow::startServer);
     connect(broadcastTimer, &QTimer::timeout, this, &ServerWindow::handleBroadcast);
     connect(pingTimer, &QTimer::timeout, this, &ServerWindow::checkPingTimeout);
-   this->resize(650,400);
+    this->resize(650,400);
+    qRegisterMetaType<QTextCursor>("QTextCursor");
+    logEvent("Broadcast timer initialized.");
 }
 ServerWindow::MaintainingServiceImpl::MaintainingServiceImpl(ServerWindow *parent)
     : parent(parent)
@@ -109,7 +113,6 @@ void ServerWindow::stopServer()
 
 void ServerWindow::handleBroadcast()
 {
-    /*if (isClientConnected) return;*/
     if(!isClientConnected) {
         QByteArray message = QString("IP:%1 PORT:%2")
                                  .arg(QHostAddress(QHostAddress::LocalHost).toString())
@@ -118,35 +121,59 @@ void ServerWindow::handleBroadcast()
 
         udpSocket->writeDatagram(message, QHostAddress::Broadcast, 10001);
         logEvent("Отправлено широковещательное сообщение: " + QString(message));
+    } else {
+        logEvent("Broadcast skipped, client connected.");
     }
 }
 
 void ServerWindow::stopBroadcast()
-{
-    broadcastTimer->stop();
-    logEvent("Трансляция завершена.");
+{    
+    if (broadcastTimer->isActive()) {
+        broadcastTimer->stop();
+        logEvent("Broadcast stopped.");
+    }
 }
 
 grpc::Status ServerWindow::MaintainingServiceImpl::Ping(grpc::ServerContext *context, const PingRequest *request, PingResponse *response)
 {
+
     Q_UNUSED(context);
     Q_UNUSED(response);
 
     QString clientIp = QString::fromStdString(request->clientip());
-    parent->logEvent("Ping received from: " + clientIp);
-    parent->isClientConnected = true;
-    parent->lastPingTime = QDateTime::currentDateTime();
+
+    if (clientIp == "DISCONNECT") { // Условие для обработки отключения
+        parent->logEvent("Disconnect request received from client.");
+        parent->isClientConnected = false;
+
+        if (!parent->broadcastTimer->isActive()) {
+            parent->broadcastTimer->start(1000);
+            parent->logEvent("Broadcast restarted after client disconnect.");
+        }
+    } else {
+        // Обычная обработка Ping
+        parent->logEvent("Ping received from: " + clientIp);
+        parent->isClientConnected = true;
+        parent->lastPingTime = QDateTime::currentDateTime();
+    }
 
     return grpc::Status::OK;
 }
 
 void ServerWindow::checkPingTimeout()
 {
-    if (!isClientConnected) return;
 
-    if (lastPingTime.msecsTo(QDateTime::currentDateTime()) > 15000) { // 15 секунд
-        logEvent("Ping timeout. Resuming broadcast...");
-        isClientConnected = false;
-        broadcastTimer->start(1000);
+    if (isClientConnected) {
+        // Проверяем, не истек ли таймаут
+        if (lastPingTime.msecsTo(QDateTime::currentDateTime()) > 15000) { // 15 секунд
+            logEvent("Ping timeout. Resuming broadcast...");
+            isClientConnected = false;
+
+            // Перезапускаем трансляцию
+            if (!broadcastTimer->isActive()) {
+                broadcastTimer->start(1000);
+                logEvent("Broadcast restarted due to ping timeout.");
+            }
+        }
     }
 }
